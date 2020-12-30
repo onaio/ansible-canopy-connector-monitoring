@@ -1,9 +1,22 @@
 ---
-# This is a playbook to execute Ansible tests.
-
 - name: Verify
   hosts: all
   tasks:
-    - name: Example assertion
-      assert:
-        that: true
+    - name: Check content of cron file
+      replace:
+        path: /etc/cron.d/canopy_connector_monitoring
+        regexp: |
+          #Ansible: Canopy NiFi Connector Monitoring
+          */1 * * * * canopy cd /home/canopy/canopy-connector-monitoring && /home/canopy/.poetry/bin/poetry run python main.py --nifi-base-url='https://nifi-production.ona.io' --log-file='/var/log/canopy-connector-monitoring/connectors.log' --max-depth=1 --nifi-username='admin'
+      check_mode: true
+      register: cron_exists
+      failed_when: cron_exists is changed
+    # the next two tasks will test that periodic queries are successfully run
+    # apparently sometimes we need to manually start cron in the docker service
+    - name: Start cron inside docker container
+      command: cron -L15
+      ignore_errors: true  # because sometimes it is already working
+    - name: Wait for connector log to be populated
+      wait_for:
+        path: /var/log/canopy-connector-monitoring/connectors.log
+        state: present

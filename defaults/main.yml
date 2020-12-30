@@ -1,2 +1,32 @@
 ---
-# defaults file for role
+# user
+canopy_system_user: "canopy"
+
+# system wide dependencies
+canopy_python_ppa: ppa:deadsnakes/ppa
+canopy_python_version: 3.8
+canopy_python_lib: "python{{ canopy_python_version }}"
+canopy_system_wide_dependencies:
+  - "{{ canopy_python_lib }}"
+  - "{{ canopy_python_lib }}-distutils"
+  - git
+  - acl
+
+# local user
+canopy_local_user_home: "{{ lookup('env', 'HOME') }}"
+canopy_local_user: "{{ lookup('env','USER') }}"
+canopy_local_checkout_path: "/tmp/canopy/{{ ansible_date_time['epoch'] }}"
+
+# connector monitoring stuff
+canopy_connector_monitoring_repo: "git@github.com:onaio/canopy-connector-monitoring.git"
+canopy_connector_monitoring_version: master
+canopy_connector_monitoring_location: "/home/{{ canopy_system_user }}/canopy-connector-monitoring"
+canopy_connector_monitoring_setup_cron: true
+canopy_connector_monitoring_cron_file: canopy_connector_monitoring
+canopy_connector_monitoring_cron_minute: "*/5"
+canopy_connector_log_location: "/var/log/canopy-connector-monitoring"
+canopy_connector_log_path: "{{ canopy_connector_log_location }}/connectors.log"
+canopy_connector_nifi_url: https://nifi-production.ona.io
+canopy_connector_nifi_username:
+canopy_connector_nifi_password:
+canopy_connector_max_depth: 1
