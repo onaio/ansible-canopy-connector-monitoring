@@ -1,2 +1,151 @@
 ---
-# tasks file for role
+- name: Add system user
+  user:
+    name: "{{ canopy_system_user }}"
+    shell: /bin/bash
+    createhome: true
+
+- name: Install software-properties-common
+  apt:
+    name: software-properties-common
+    state: present
+    update_cache: true
+    cache_valid_time: 600
+
+- name: Add python PPA
+  command: add-apt-repository {{ canopy_python_ppa }} -y
+  when:
+    - canopy_python_ppa is defined
+    - canopy_python_ppa | length
+  tags: python
+
+- name: Update apt cache
+  apt:
+    update_cache: true
+
+- name: Install system-wide dependencies
+  apt:
+    name: "{{ canopy_system_wide_dependencies }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 600
+  tags:
+    - python
+    - packages
+
+- name: Check if poetry is installed
+  command: test -e /home/{{ canopy_system_user }}/.poetry/bin/poetry
+  register: poetry_check
+  failed_when: poetry_check.rc == 2
+  changed_when: poetry_check.rc > 0
+  become: true
+  become_user: "{{ canopy_system_user }}"
+  tags: poetry
+
+- name: Install poetry
+  shell: curl -sSL {{ canopy_poetry_url }} | {{ canopy_python_lib }} -  # noqa 306
+  become: true
+  become_user: "{{ canopy_system_user }}"
+  args:
+    warn: false
+  when:
+    - poetry_check.rc > 0
+  tags: poetry
+
+- name: Add poetry to PATH
+  shell: 'export PATH="$HOME/.poetry/bin:$PATH"'
+  become: true
+  become_user: "{{ canopy_system_user }}"
+  when:
+    - poetry_check.rc > 0
+  tags: poetry
+
+- name: Clone Canopy connector monitoring repo
+  git:
+    repo: "{{ canopy_connector_monitoring_repo }}"
+    dest: "{{ canopy_local_checkout_path }}"
+    version: "{{ canopy_connector_monitoring_version }}"
+    accept_hostkey: true
+    depth: '1'
+    force: true
+  tags: git
+  become: true
+  become_user: "{{ canopy_local_user }}"
+  delegate_to: localhost
+
+- name: Compress connector monitoring folder locally
+  archive:
+    path: "{{ canopy_local_checkout_path }}/"
+    dest: "{{ canopy_local_checkout_path }}.tgz"
+    mode: "0644"
+  delegate_to: localhost
+  become: true
+  become_user: "{{ canopy_local_user }}"
+  tags: git
+
+- name: Empty connector monitoring directory if it exists
+  file:
+    state: absent
+    path: "{{ canopy_connector_monitoring_location }}"
+  tags: git
+
+- name: Ensure connector monitoring directory exists
+  file:
+    state: directory
+    owner: "{{ canopy_system_user }}"
+    group: root
+    path: "{{ canopy_connector_monitoring_location }}"
+    mode: "0755"
+  tags: git
+
+- name: UnCompress connector monitoring folder to remote host
+  unarchive:
+    src: "{{ canopy_local_checkout_path }}.tgz"
+    dest: "{{ canopy_connector_monitoring_location }}"
+    owner: "{{ canopy_system_user }}"
+  tags: git
+
+- name: Set python version
+  command: "{{ canopy_poetry_executable }} env use {{ canopy_python_version }}"
+  args:
+    chdir: "{{ canopy_connector_monitoring_location }}"
+  become: true
+  become_user: "{{ canopy_system_user }}"
+  register: poetry_env_output
+  changed_when: "'Creating virtualenv' in poetry_env_output.stdout"
+
+- name: Install python packages
+  command: "{{ canopy_poetry_executable }} install --no-dev"
+  args:
+    chdir: "{{ canopy_connector_monitoring_location }}"
+  become: true
+  become_user: "{{ canopy_system_user }}"
+  register: poetry_install_output
+  changed_when: "'No dependencies to install or update' not in poetry_install_output.stdout"
+
+- name: Ensure log directory exists
+  file:
+    state: directory
+    owner: "{{ canopy_system_user }}"
+    group: root
+    path: "{{ canopy_connector_log_location }}"
+    mode: "0755"
+
+- name: Set NIFI_USER_PASSWORD env variable
+  lineinfile:
+    path: /etc/environment
+    state: present
+    regexp: '^NIFI_USER_PASSWORD='
+    line: "NIFI_USER_PASSWORD={{ canopy_connector_nifi_password }}"
+  when:
+    - canopy_connector_nifi_password is defined
+    - canopy_connector_nifi_password | length
+
+- name: Create cron job
+  cron:
+    name: "Canopy NiFi Connector Monitoring"
+    minute: "{{ canopy_connector_monitoring_cron_minute }}"
+    job: "cd {{ canopy_connector_monitoring_location }} && {{ canopy_poetry_executable }} run python main.py --nifi-base-url='{{ canopy_connector_nifi_url }}' --log-file='{{ canopy_connector_log_path }}' --max-depth={{ canopy_connector_max_depth }} {% if canopy_connector_nifi_username is defined and canopy_connector_nifi_username | length %}--nifi-username='{{ canopy_connector_nifi_username }}'{% endif %}"  # noqa 204 301
+    state: present
+    user: "{{ canopy_system_user }}"
+    cron_file: "{{ canopy_connector_monitoring_cron_file }}"
