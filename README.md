@@ -1,35 +1,87 @@
-Ansible Role [![Build Status](https://github.com/onaio/ansible-role/workflows/CI/badge.svg)](https://github.com/onaio/ansible-role/actions?query=workflow%3ACI)
-=========
+# Ansible Canopy Connector Monitoring [![Build Status](https://github.com/onaio/ansible-canopy-connector-monitoring/workflows/CI/badge.svg)](https://github.com/onaio/ansible-canopy-connector-monitoring/actions?query=workflow%3ACI)
 
-A brief description of the role goes here.
+Use this role to set up [Canopy connector monitoring](https://github.com/onaio/canopy-connector-monitoring).
 
-Requirements
-------------
+## Role Variables
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+Some of the more important variables are briefly described below.  You can see all variables by looking at the [defaults/main.yml](defaults/main.yml) file.
 
-Role Variables
---------------
+### canopy_connector_nifi_url
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+This is the URL for the NiFi instance that you wish to monitor.
 
-Dependencies
-------------
+```yml
+canopy_connector_nifi_url: https://nifi-stage.ona.io
+```
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+### canopy_connector_nifi_username
 
-Example Playbook
-----------------
+This is the NiFi basic auth username.  This is optional and should be left out if not needed.
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+```yml
+canopy_connector_nifi_username: admin
+```
+
+### canopy_connector_nifi_password
+
+This is the NiFi basic auth password.  This is optional and should be left out if not needed.
+
+```yml
+canopy_connector_nifi_password: hunter2
+```
+
+### canopy_connector_monitoring_setup_cron
+
+Determines whether or not the monitoring command should be set up to run periodically using cron.  This defaults to `true`.
+
+```yml
+canopy_connector_monitoring_setup_cron: true
+```
+
+### canopy_connector_monitoring_cron_minute
+
+This specifies how often the monitoring command should run.
+
+```yml
+canopy_connector_monitoring_cron_minute: "*/5"  # cron format
+```
+
+## Dependencies
+
+At this time, this role has no dependencies.
+
+## Example Playbook
 
 ```yml
 - hosts: servers
   roles:
-    - { role: username.rolename, x: 42 }
+    - role: ansible-canopy-connector-monitoring
+      vars:
+        - canopy_connector_nifi_username: admin
+        - canopy_connector_nifi_password: hunter2
+        - canopy_connector_monitoring_cron_minute: "*/5"
 ```
 
-License
--------
+## Testing
+
+This project uses molecule for testing.
+
+Start by creating a virtual environment and installing python packages
+
+```sh
+pip install -r requirements/dev.in
+```
+
+Then to run the full test sequence:
+
+```sh
+tox
+```
+
+## License
 
 Apache 2
+
+## Authors
+
+[Ona Engineering](https://ona.io)
