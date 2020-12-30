@@ -10,8 +10,8 @@
         - canopy_connector_nifi_password: hunter2
         - canopy_connector_monitoring_cron_minute: "*/1"
         - canopy_system_wide_dependencies:
-          - "{{ canopy_python_lib }}"
-          - "{{ canopy_python_lib }}-distutils"
-          - git
-          - acl
-          - curl
+            - "{{ canopy_python_lib }}"
+            - "{{ canopy_python_lib }}-distutils"
+            - git
+            - acl
+            - curl
