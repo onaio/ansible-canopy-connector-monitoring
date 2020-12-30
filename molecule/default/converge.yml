@@ -6,6 +6,7 @@
       include_role:
         name: "ansible-canopy-connector-monitoring"
       vars:
+        - canopy_connector_monitoring_repo: "https://github.com/onaio/canopy-connector-monitoring.git"
         - canopy_connector_nifi_username: admin
         - canopy_connector_nifi_password: hunter2
         - canopy_connector_monitoring_cron_minute: "*/1"
