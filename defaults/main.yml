@@ -21,6 +21,7 @@ canopy_local_checkout_path: "/tmp/canopy/{{ ansible_date_time['epoch'] }}"
 canopy_connector_monitoring_repo: "git@github.com:onaio/canopy-connector-monitoring.git"
 canopy_connector_monitoring_version: master
 canopy_connector_monitoring_location: "/home/{{ canopy_system_user }}/canopy-connector-monitoring"
+canopy_connector_monitoring_setup_cron: true
 canopy_connector_monitoring_cron_file: canopy_connector_monitoring
 canopy_connector_monitoring_cron_minute: "*/5"
 canopy_connector_log_location: "/var/log/canopy-connector-monitoring"
