@@ -4,4 +4,14 @@
   tasks:
     - name: "Include role"
       include_role:
-        name: "ansible-role"
+        name: "ansible-canopy-connector-monitoring"
+      vars:
+        - canopy_connector_nifi_username: admin
+        - canopy_connector_nifi_password: hunter2
+        - canopy_connector_monitoring_cron_minute: "*/1"
+        - canopy_system_wide_dependencies:
+          - "{{ canopy_python_lib }}"
+          - "{{ canopy_python_lib }}-distutils"
+          - git
+          - acl
+          - curl
